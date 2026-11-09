@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BLOCK OPS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>.hidden{display:none!important}html,body{background:#0b0f14;color:#e8eef5;font-family:system-ui,sans-serif}#bootfail{position:fixed;z-index:99999;left:0;right:0;top:0;padding:14px;background:#b00020;color:#fff;font:15px/1.4 system-ui,sans-serif}</style>
+<link rel="stylesheet" href="src/ui/styles.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+    "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="crosshair"><i></i><i></i><i></i><i></i></div>
+  <div id="hitmarker"></div>
+  <div id="damage-flash"></div>
+  <div id="water-overlay"></div>
+  <div id="scope-overlay" class="hidden"></div>
+  <div id="top-left">
+    <div id="hp-bar"><div id="hp-fill"></div><span id="hp-text">100</span></div>
+    <div id="mode-text">COMBAT</div>
+  </div>
+  <div id="top-right">
+    <div id="kills">KILLS <b id="kill-count">0</b></div>
+    <div id="time-text">12:00</div>
+    <div id="realm-text"></div>
+  </div>
+  <div id="killfeed"></div>
+  <div id="bottom-right">
+    <div id="weapon-name">AK-47</div>
+    <div id="ammo"><b id="ammo-mag">30</b><span>/</span><span id="ammo-res">120</span></div>
+  </div>
+  <div id="hotbar"></div>
+  <div id="portal-flash"></div>
+  <div id="toast"></div>
+  <button id="pause-btn" aria-label="Pause">&#10074;&#10074;</button>
+</div>
+
+<div id="mobile-controls" class="hidden">
+  <div id="joystick"><div id="stick"></div></div>
+  <button class="mbtn" id="btn-shoot">SHOOT</button>
+  <button class="mbtn" id="btn-jump">JUMP</button>
+  <button class="mbtn" id="btn-reload">RELOAD</button>
+  <button class="mbtn" id="btn-scope">SCOPE</button>
+  <button class="mbtn" id="btn-build">BUILD</button>
+  <button class="mbtn" id="btn-place">PLACE</button>
+  <button class="mbtn" id="btn-crouch">DUCK</button>
+  <button class="mbtn" id="btn-weapon">SWAP</button>
+  <button class="mbtn" id="btn-block">BLOCK</button>
+  <button class="mbtn" id="btn-sprint">RUN</button>
+  <button class="mbtn" id="btn-fly">FLY</button>
+  <button class="mbtn" id="btn-cam">CAM</button>
+  <button class="mbtn" id="btn-use">USE</button>
+  <button class="mbtn" id="btn-inv">BAG</button>
+  <button class="mbtn" id="btn-prefab">BUILD<br>SET</button>
+</div>
+
+<div id="inventory" class="hidden">
+  <div class="inv-card">
+    <div class="inv-head"><b>BAG</b>
+      <div class="inv-tabs"><button data-tab="blocks" class="on">BLOCKS</button><button data-tab="sets">BUILD SETS</button><button data-tab="vehicles">VEHICLES</button></div>
+      <button id="inv-reset" class="inv-small">RESET BAR</button><button id="inv-close" class="inv-x" aria-label="Close">&#10005;</button></div>
+    <div id="inv-hint"></div>
+    <div id="inv-hotbar"></div>
+    <div id="inv-grid"></div>
+  </div>
+</div>
+
+<div id="menu">
+  <canvas id="lobby-canvas"></canvas>
+  <div id="lobby-ui">
+
+    <div id="lb-top">
+      <button id="lb-profile" class="chip" title="Change name and look">
+        <span id="lb-avatar">P</span>
+        <span class="chip-text"><b id="lb-name">PLAYER</b><small>Tap to edit look</small></span>
+      </button>
+      <div class="logo">BLOCK<span>OPS</span></div>
+      <div class="lb-top-right">
+        <button id="gfx-btn" class="sq" title="Graphics quality"><i>&#127912;</i><small id="gfx-label">GFX HIGH</small></button>
+        <button id="menu-hud-btn" class="sq" title="Customize HUD"><i>&#9881;</i><small>HUD</small></button>
+        <button id="help-btn" class="sq" title="Controls"><i>?</i><small>HELP</small></button>
+      </div>
+    </div>
+
+    <div id="lb-left">
+      <button id="wd-open" class="sq"><i>&#128085;</i><small>LOOK</small></button>
+      <button id="lb-copy-link" class="sq"><i>&#128279;</i><small>INVITE</small></button>
+    </div>
+
+    <div id="lb-squad" class="card">
+      <h3>SQUAD <span id="lb-count">1/4</span></h3>
+      <div id="lb-friends"><div class="squad-slot you">You</div></div>
+      <label>YOUR BO-ID</label>
+      <div class="idbox"><code id="my-id">...</code><button id="copy-id">COPY</button></div>
+      <label>JOIN A FRIEND</label>
+      <div class="idbox">
+        <input id="friend-id" placeholder="BO-XXXX-1234" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        <button id="join-btn">JOIN</button>
+      </div>
+      <small id="net-status">Offline: bots only</small>
+    </div>
+
+    <div id="lb-loading" class="hidden">Loading character...</div>
+
+    <div id="lb-bottom-left" class="tip">TIP: <span id="lb-tip"></span></div>
+
+    <div id="lb-bottom-right">
+      <div class="mode card">
+        <small>MODE</small>
+        <b>SANDBOX SURVIVAL</b>
+        <span>Infinite world, oceans, villages, sky realms</span>
+        <label class="tog"><input type="checkbox" id="opt-bots" checked> Enemy bots</label>
+      </div>
+      <button id="play-btn" class="start">START<small id="start-sub">SOLO</small></button>
+    </div>
+
+    <div id="wardrobe" class="card hidden">
+      <h3>YOUR LOOK</h3>
+      <label>NAME</label>
+      <input id="wd-name" maxlength="12" autocomplete="off" spellcheck="false">
+      <div id="wd-rows"></div>
+      <button id="wd-done" class="wide">DONE</button>
+    </div>
+
+    <div id="help" class="card hidden">
+      <h3>CONTROLS</h3>
+      <p><b>PC:</b> WASD move, Shift sprint, Space jump, C crouch, mouse aim, LMB shoot, RMB scope, R reload, 1-4 weapon, Tab / T next / previous weapon (8 total: AK, sniper, pistol, shotgun, SMG, sword, bow, rocket), F toggle BUILD/COMBAT, Q/E or wheel pick block, G place block, X break block, Z or double-tap Space = FLY (Space up, C down, Shift fast), B = bag (all blocks + build sets), P = place the selected build set, V = use vehicle, Y = camera view (first person / behind / front), Esc pause.</p>
+      <p><b>Phone:</b> left stick move, drag right side to look, buttons for the rest. BUILD switches Shoot to break and Place to place.</p>
+      <button id="help-close" class="wide">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<div id="hud-edit-grid" class="hidden"></div>
+
+<div id="hud-editor" class="hidden">
+  <div id="he-title">Tap an item to select it, drag to move</div>
+  <div class="he-sliders">
+    <label>Size <input id="he-size" type="range" min="0.4" max="2.6" step="0.05" value="1" data-needs-sel></label>
+    <label>Opacity <input id="he-opacity" type="range" min="0.15" max="1" step="0.05" value="1" data-needs-sel></label>
+    <label class="he-check"><input id="he-hide" type="checkbox" data-needs-sel> Hide</label>
+  </div>
+  <div class="he-row">
+    <button id="he-reset" data-needs-sel>Reset item</button>
+    <button id="he-mirror">Mirror L/R</button>
+    <button id="he-resetall">Reset all</button>
+    <button id="he-flip" title="Move this panel">&#8645;</button>
+    <button id="he-done" class="primary">DONE</button>
+  </div>
+</div>
+
+<div id="pause-menu" class="hidden">
+  <div class="panel">
+    <h2>PAUSED</h2>
+    <button id="pm-resume" class="big">RESUME</button>
+    <button id="pm-hud" class="big alt">CUSTOMIZE HUD</button>
+    <label class="slide">Look sensitivity <input id="pm-sens" type="range" min="0.4" max="3" step="0.05" value="1"></label>
+    <button id="pm-menu" class="link">Back to main menu</button>
+  </div>
+</div>
+
+<div id="rotate-hint" class="hidden">Rotate your phone to landscape</div>
+
+<script>
+  // Safety net 1: the ID exists even if the game script is slow or blocked (same key/format as src/multiplayer/UniqueID.js).
+  (function () {
+    var K = 'blockops.id.v1', L = 'ABCDEFGHJKLMNPQRSTUVWXYZ', id = null;
+    try { id = localStorage.getItem(K); } catch (e) {}
+    if (!id || !/^BO-[A-Z]{4}-\d{4}$/.test(id)) {
+      var r = function (n) { return Math.floor(Math.random() * n); }, a = '';
+      for (var i = 0; i < 4; i++) a += L.charAt(r(L.length));
+      id = 'BO-' + a + '-' + ('000' + r(10000)).slice(-4);
+      try { localStorage.setItem(K, id); } catch (e) {}
+    }
+    window.addEventListener('DOMContentLoaded', function () { var e = document.getElementById('my-id'); if (e) e.textContent = id; });
+  })();
+  // Safety net 2: if the game never starts, say exactly why instead of showing a broken page.
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      if (window.__bootOk) return;
+      var d = document.createElement('div'); d.id = 'bootfail';
+      d.textContent = 'Game files did not load. Make sure the whole "src" folder, "icons" and index.html were uploaded to the site root (not inside another folder), then reload. Also check internet access to unpkg.com.';
+      document.body.appendChild(d);
+    }, 6000);
+  });
+</script>
+<script type="module" src="src/main.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js').catch(() => {}));
+  }
+</script>
+</body>
+</html>
